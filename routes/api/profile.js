@@ -280,7 +280,7 @@ router.delete(
       // Get idenx remove
       const removeIndex = await profile.education
         .map((item) => item.id)
-        .indexOf(req.params.exp_id);
+        .indexOf(req.params.edu_id);
 
       // splice out of attay
       profile.education.splice(removeIndex, 1);

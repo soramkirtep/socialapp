@@ -7,6 +7,7 @@ const { Profile } = require("../../models/Profile");
 
 // Validation
 const validatePostInput = require("../../validation/post");
+const { route } = require("./users");
 
 // @route   api/posts/test
 // @desc    Test post route
@@ -152,6 +153,70 @@ router.post(
       }
       // Add user id to likes Array
       post.likes.unshift({ user: req.user.id });
+      await post.save();
+      res.json(post);
+    } catch (err) {
+      console.log(err);
+    }
+  }
+);
+
+// @route   api/posts/comment/:id
+// @desc    Add commnet to post
+// @access  Private
+router.post(
+  "/comment/:id",
+  passport.authenticate("jwt", { session: false }),
+  async (req, res) => {
+    try {
+      const { errors, isValid } = validatePostInput(req.body);
+      if (!isValid) return res.status(400).json(errors);
+      const post = await Post.findById(req.params.id);
+      const newCommnet = {
+        text: req.body.text,
+        name: req.body.name,
+        avatar: req.body.avatar,
+        user: req.user.id,
+      };
+
+      post.comments.unshift(newComment);
+      await post.save();
+      res.json(post);
+    } catch (err) {
+      console.log(err);
+    }
+  }
+);
+// @route   api/posts/comment/:id/:comment_id
+// @desc    remove commnet from post
+// @access  Private
+router.delete(
+  "/comment/:id/:comment_id",
+  passport.authenticate("jwt", { session: false }),
+  async (req, res) => {
+    try {
+      const post = await Post.findById(req.params.id);
+      if (
+        post.comments.filter(
+          (comment) => comment._id.toString() === req.params.comment_id
+        ).length === 0
+      )
+        return res
+          .status(404)
+          .json({ commentnotexists: "Comment does not exist" });
+
+      if (post.comments.user.toString() !== req.user.id)
+        return res.status(401).json("You can delete only your commnets");
+
+      // Get index remove
+      const removeIndex = await post.comments
+        .map((item) => item._id.toString())
+        .indexOf(req.params.comment_id);
+
+      // splice out of array
+      post.comments.splice(removeIndex, 1);
+
+      // Save
       await post.save();
       res.json(post);
     } catch (err) {
